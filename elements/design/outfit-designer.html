@@ -1,0 +1,130 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<dom-module id="outfit-designer">
+    <template>
+        <style>
+        
+            :host {
+                display: block;                                                
+            }    
+            .title {
+                text-align: center;
+                text-transform: uppercase;
+                font-size: 1em;                
+                padding: 0.2em 0.8em;
+            }    
+            .paper {
+                @apply(--layout-vertical);
+                padding 1em;
+                min-height: 600px;
+            }
+            paper-button.lime {
+                background-color: #ffc400;
+                color: white;
+            }    
+            paper-menu {
+              display: block;
+            }
+            paper-dropdown-menu {
+              text-align: left;
+              margin: auto;
+              width: 180px;
+            }
+        </style>
+        
+        <paper-material class="paper" elevation="3">
+        
+            <div class="layout horizontal center">
+                <h4 class="title">Outfit</h4>
+                <div class="flex"></div>
+                <template is="dom-if" if="[[outfitReady]]">
+                    <paper-button raised class="lime" on-click="saveOutfit">add it</paper-button>
+                </template>
+            </div>
+            
+
+            <div class="layout horizontal center">
+                <paper-dropdown-menu id="styleDropDown" label="Style" class="flex">
+                    <paper-menu class="dropdown-content" selected="0" class="flex">
+                        <paper-item>business</paper-item>
+                        <paper-item>casual</paper-item>
+                        <paper-item>fashion</paper-item>
+                        <paper-item>sportwear</paper-item>
+                    </paper-menu>
+                </paper-dropdown-menu>
+                <paper-input id="rankingInput" label="Ranking" type="number" min="0" step="5" max="100" value="80" class="flex"></paper-input>
+            </div>                    
+
+            <clothe-list clothes="[[selectedClothes]]" 
+                         orientation="vertical" 
+                         clothe-size="100" 
+                         removable></clothe-list>
+            
+        </paper-material>    
+
+  </template>
+
+<script>
+(function () {
+    'use strict';
+
+    Polymer({
+        is: 'outfit-designer',
+        
+        properties: {
+            selectedClothes: {
+                type: Array,
+                value: []
+            },
+            outfitReady: {
+                type: Boolean,
+                value: false
+            }
+        },
+        
+        observers: [
+            'selectionAddedOrRemoved(selectedClothes.splices)'
+        ],
+        
+        ready: function() {
+            console.log('clothe-list ready');
+        },            
+        
+        addClothe: function(clothe) {
+            this.push('selectedClothes', clothe);
+        },
+        
+        saveOutfit: function(event) {
+            var clothes = this.selectedClothes;
+            var outfit = {
+                style: this.$.styleDropDown.selectedItemLabel,
+                matchingRate: this.$.rankingInput.value,
+                outfit: clothes
+            };                       
+            this.fire('outfitsaved', outfit);            
+            this.set('selectedClothes', []);
+        },
+        
+        unselectAll: function(event) {
+            this.set('selectedClothes', []);
+        },
+        
+        selectionAddedOrRemoved: function(changeRecord) {
+            console.log('Selection changed: ', changeRecord);
+            
+            if(!this.selectedClothes)
+                return;
+            var selectCount = this.selectedClothes.length;
+            
+            if(selectCount >= 1 && selectCount <= 4) {
+                this.set('outfitReady', true);
+            }
+            else {
+                this.set('outfitReady', false);
+            }
+        }
+        
+    });
+})();
+</script>
+
+</dom-module>

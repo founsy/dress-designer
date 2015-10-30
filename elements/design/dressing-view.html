@@ -1,0 +1,76 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<dom-module id="dressing-view">
+    
+    <template>
+        <style>        
+            :host {
+                display: block;
+                margin: 0 auto;
+            }
+            .clothe-list {
+                margin-bottom: 4px;
+            }
+        </style>
+        
+        <div class="layout horizontal center">
+            <h4 class="title">
+                <template is="dom-if" if="{{clothes}}">[[clothes.length]]</template>
+                clothes in dressing.</h4>        
+        </div>    
+    
+        <clothe-list id="mailleList" class="clothe-list maille"
+                     clothes="[[clothes]]" 
+                     filter-property="clothe_type" filter-value="maille" display-colors="true"
+                     on-changed="changedHandler"></clothe-list>
+        
+        <clothe-list id="topList" class="clothe-list top"
+                     clothes="[[clothes]]" 
+                     filter-property="clothe_type" filter-value="top" display-colors="true"
+                     on-changed="changedHandler"></clothe-list>
+        
+        <clothe-list id="pantList" class="clothe-list pants"
+                     clothes="[[clothes]]" 
+                     filter-property="clothe_type" filter-value="pants" display-colors="true"
+                     on-changed="changedHandler"></clothe-list>
+        
+        <clothe-list id="dressList" class="clothe-list dress"
+                     clothes="[[clothes]]" 
+                     filter-property="clothe_type" filter-value="dress" display-colors="true"
+                     on-changed="changedHandler"></clothe-list>
+        
+    </template>    
+    
+    <script>
+    (function () {
+        'use strict';
+            
+        Polymer({
+            is: 'dressing-view',
+            properties: {
+                clothes: {
+                    type: Array,                    
+                    value: []
+                },
+                countClothes: {
+                    type: Number,
+                    value: 0,
+                    notify: true
+                }
+            },
+            created: function() {
+                //console.log("dressing-view created.");
+            },                
+            ready: function() {
+                console.log("dressing-view ready.");                
+            },
+            changeDressing: function(newValue) {
+                this.clothes = newValue;
+            },
+            changedHandler: function(event) {
+                this.fire('select', event.detail);
+            }                
+        });
+    })();
+    </script>        
+    
+</dom-module>    

@@ -1,0 +1,63 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<dom-module id="colors-list">
+    <template>
+        
+        <style>
+            :host {      
+                display: block;
+                margin-top: 4px;
+                @apply(--layout-horizontal);
+                @apply(--layout-center);                
+                @apply(--layout-center-justified);                
+            }  
+            .color-item {
+                display: inline-block;
+                width: 15px;
+                height: 10px;
+                border-radius: 2px;
+                margin: 0 4px;
+                vertical-align: middle;
+            }
+            .color-item:first-child {
+                width: 30px;
+                height: 15px;
+                border-radius: 2px;
+            }
+        </style>    
+        
+        <template is="dom-repeat" items="[[colors]]" as="color">
+            <span class="color-item" style$="{{colorBackground(color)}}"></span>
+        </template>
+        
+    </template>
+
+    <script>
+        (function() {       
+        Polymer({
+            is: 'colors-list',
+            properties: {
+                colors: {
+                    type: Array,
+                    value: []
+                },
+                colorString: {
+                    type: String,
+                    observer: '_colorStringChanged'
+                }                
+            },
+            created: function() {
+                console.log("color list created.");
+            },                
+            ready: function() {                
+            },
+            colorBackground: function(color) {                
+                return 'background-color: ' + color + ';';
+            },
+            _colorStringChanged: function(newValue, oldValue) {                
+                this.set('colors', newValue.split(','));
+            }
+        });
+        })();
+    </script>
+    
+</dom-module>        

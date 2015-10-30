@@ -1,0 +1,227 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<dom-module id="outfit-list">
+  
+    <template>
+        <style include="shared-styles"></style>
+        <style>
+            :host {
+                display: block;
+                @apply(--layout-vertical);
+            }            
+            .title {
+                text-align: center;
+                font-size: 1em;                
+                padding: 0.2em 0.8em;
+            }            
+            
+            .label {
+                text-transform: uppercase;
+                margin-right: 1em;
+            }
+            .label .ranking {
+                background-color: #ffc400;
+                border-radius: 16px;
+                font-size: 0.8em;
+                padding: 0.4em;
+                color: white;
+            }
+            .clothes {
+                display: inline-block;
+                white-space: nowrap;
+            }
+            .thumb {
+                margin: 0;
+            }
+            paper-button.lime {
+                background-color: #ffc400;
+                color: white;
+            }
+            .options {
+                margin-left: 1em;
+            }
+            .download-link {
+                margin-top: 1.5em;                
+                text-align: center;
+            }
+            .download-link a {
+                display: block;
+                text-align: center;
+                padding: 1em;
+                background-color: rgba(244, 244, 244, 0.5);
+                color: darkgray;
+                border-radius: 4px;
+            }
+            .download-link a:enabled {
+                text-transform: uppercase;
+                background-color: cornflowerblue;
+                color: white;
+                text-decoration: none;
+            }
+            #saveOverlay {
+                min-width: 800px;
+                min-height: 600px;
+            }
+            .with-margin {
+                margin: 24px 40px;
+            }
+            .full-height {
+                height: 100%;
+            }
+            .scrollable {
+                overflow: auto;
+            }
+            .scroll-content {
+                min-width: 600px;
+                min-height: 300px;
+                border: none;
+            }
+        </style>
+        
+        <div class="layout horizontal center">
+            <h4 class="title"><template is="dom-if" if="{{countOutfits}}">{{countOutfits}}</template> saved outfits:</h4>
+            <div class="flex"></div>
+            <paper-button raised class="lime" on-click="saveOutfits">Save</paper-button>
+        </div>          
+        
+        <div class="layout horizontal center options">
+            <paper-checkbox id="suggestionsCheckBox">For suggestions</paper-checkbox>
+<!--
+            <paper-dropdown-menu id="timesDropDown" label="Time" class="flex">
+                <paper-menu class="dropdown-content" selected="0" class="flex" on-iron-select="timeChangeHandler">
+                    <paper-item>morning</paper-item>
+                    <paper-item>afternoon</paper-item>
+                    <paper-item>tonight</paper-item>
+                    <paper-item>tomorrow morning</paper-item>
+                    <paper-item>tomorrow afternoon</paper-item>
+                </paper-menu>
+            </paper-dropdown-menu>
+-->
+            
+        </div>
+        
+        <div class="outfit-list">
+        <template id="outfitList" is="dom-repeat" items="[[outfits]]" as="outfit">
+            <paper-item class="item">
+                <div class="label">
+                  <span>[[outfit.style]]</span>
+                  <span class="ranking">[[outfit.matchingRate]]</span>
+                </div>           
+                <div class="clothes">
+                    <template is="dom-repeat" items="[[outfit.outfit]]" as="clothe">
+                        <span class="thumb"><img class="avatar" height="32" src="[[clothe.clothe_image]]" /></span>
+                    </template>
+                </div>
+                <div class="flex"></div>
+                <iron-icon icon="clear" on-click="removeOutfit"></iron-icon>
+            </paper-item>
+        </template>  
+        </div>
+        
+        <simple-overlay id="saveOverlay" class="with-margin full-height layout vertical">
+            <div class="layout horizontal center">
+                <h4>Saved outfits JSON data</h4>
+                <div class="flex"></div>
+                <paper-button class="lime" raised on-click="clipboardCopy">Copy</paper-button>
+            </div>
+            <div class="flex scrollable">
+                <textarea id="dataToCopy" class="scroll-content" autofocus>{{lastOutfitsJSON}}</textarea>
+            </div>            
+            <paper-toast id="copiedToast" text="Text is copied in your clipboard."></paper-toast>
+        </simple-overlay>
+        
+    </template>
+    
+<script>
+(function () {
+    'use strict';
+    
+    Polymer({
+        is: 'outfit-list',
+        
+        properties: {     
+            times: {
+                type: Array,
+                value: []
+            },
+            outfits: {
+                type: Array,
+                value: [],
+                notify: true
+            },
+            countOutfits: {
+                type: Number,
+                value: 0,
+                notify: true
+            },
+            lastOutfitsJSON: {
+                type: String,
+                notify: true
+            }            
+        },        
+        observers: [
+            'outfitAddedOrRemoved(outfits.splices)'
+        ],        
+//        timeChangeHandler: function(event) {
+//            console.log(this.$.timesDropDown.selectedItemLabel);
+//        },        
+        addOutfit: function(outfit) {
+            console.log(outfit);
+            this.push('outfits', outfit);
+            this.set('countOutfits', this.outfits.length);
+        },        
+        removeOutfit: function(event) {
+            var index = this.$.outfitList.indexForElement(event.target);
+            console.log(index);
+            this.splice('outfits', index, 1);
+            this.set('countOutfits', this.outfits.length);
+        },        
+        outfitAddedOrRemoved: function(changeRecord) {
+            console.log("outfits changed");
+        },
+        saveOutfits: function(event) {            
+            var self = this;
+            var includeImages = document.querySelector('#suggestionsCheckBox').checked;
+            
+            for(var i=0; i<this.outfits.length; i++) {
+                var outfit = this.outfits[i];
+                for(var j=0; j<outfit.outfit.length;j++) {
+                    var clothe = outfit.outfit[j];
+                    if(!includeImages)
+                        clothe.clothe_image = null;                    
+                }
+            }
+            var outfitString = JSON.stringify(this.outfits);
+            app.dataStore.addLastOutfit(outfitString);
+            this.set('lastOutfitsJSON', outfitString);
+            
+            var overlay = document.getElementById('saveOverlay');
+            overlay.open();
+        },
+        clipboardCopy: function(event) {             
+//            var copyEvent = new ClipboardEvent('copy', {dataType: 'text/plain', data: this.lastOutfitsJSON} );
+//            var ok = document.dispatchEvent(copyEvent);
+            
+            var toast = document.querySelector('#copiedToast');
+            var toCopy = document.querySelector('#dataToCopy');  
+            var okMessage = 'Text is copied in your clipboard.';
+            var koMessage = 'Can not copy in your clipboard.';            
+            try {  
+                toCopy.select();
+                var copied = document.execCommand('copy');
+                if(copied) {
+                    toast.text = okMessage;
+                }
+                else {
+                    toast.text = koMessage;
+                }                
+            } catch(error) {  
+                toast.text = koMessage + ' ' +  error;
+            }  
+            toast.show();            
+            
+        }
+    });
+})();        
+</script>            
+    
+</dom-module>    

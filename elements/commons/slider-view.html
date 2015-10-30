@@ -1,0 +1,75 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<!--
+`slider-view` is a slider
+
+##### Example
+
+    <slider-view next prev>
+      <slide>NO. ONE</slide>
+      <slide>ITEM TWO</slide>
+      <slide background="http://lorempixel.com/800/600">THE THIRD</slide>
+    </slider-view>
+
+@element slider-view
+@blurb Element providing a slider.
+@status alpha
+@homepage http://founsy.github.com/slider-view
+-->
+<dom-module id="slider-view">
+
+  <template attributes="next prev scrollbar pagination">
+      
+    <style>              
+        :host{
+            display: block;
+            position: relative;
+        }        
+        .swiper-container {
+            width: 600px;
+            height: 400px;
+        }          
+        
+    </style>
+
+          
+    <div class="slider-container">
+      <div class="slider-wrapper">
+        <content></content>
+      </div>
+    </div>
+    <div class="slider-pagination"></div>
+    <div class="slider-button-prev"></div>
+    <div class="slider-button-next"></div>
+    <div class="slider-scrollbar"></div>  
+
+  </template>
+    
+<script>    
+    (function() {
+    'use strict';        
+    Polymer({
+        is: 'slider-view', 
+        properties: {            
+        },
+        created: function() {
+            console.log("slider-view created.");
+            this.slider = null;            
+        },                
+        ready: function() {                                  
+            var container = this.querySelector('.swiper-container');
+            var options = {
+                speed: 400,
+                spaceBetween: 5,
+                keyboardControl: true
+            };                                          
+        },
+        attached: function() {            
+                        
+        }
+    });
+        
+})();
+</script>
+
+</dom-module>
+

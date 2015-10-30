@@ -1,0 +1,166 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<dom-module id="clothe-list">
+    <template>
+    <style>
+        :host {      
+            display: block;
+        }                
+        .list-wrapper {
+            display: block;
+            white-space: nowrap;
+            overflow-y: hidden;
+            overflow-x: scroll;
+            -webkit-overflow-scrolling: touch;
+        }
+        .list-wrapper.vertical {
+            overflow-y: scroll;
+            overflow-x: hidden;
+        }
+        .clothe-item {
+            display: inline-block;
+            margin: 0 auto;
+            text-transform: uppercase;
+            text-align: center;
+            padding: 5px;
+            vertical-align: top;
+        }        
+        .vertical .clothe-item {
+            display: block;
+        }
+        .clothe-image {
+            margin: 0 auto;  
+            background-color: aliceblue;            
+        }        
+        .clothe-image.system  {
+            animation-name: rotate-image;
+            animation-duration: 0.2s;            
+            animation-iteration-count: 1;
+            animation-direction: alternate;
+            animation-fill-mode: forwards;
+        }
+        .clothe-image.designer {            
+        }
+        .remove-button {            
+        }
+        @keyframes rotate-image {
+          0% { transform:rotate(0deg); }
+          100% { transform:rotate(90deg); }
+        }
+        @-webkit-keyframes rotate-image {
+          0% { transform:rotate(0deg); }
+          100% { transform:rotate(90deg); }
+        }
+        .clothe-label {
+            display: block;
+            text-align: center;
+            margin-top: 0.5em;
+            font-size: 0.7em;
+            line-height: 1em;
+        }  
+        .selected {
+            background: #eee;
+        }
+    </style>
+
+    <div id="listWrapper" class="list-wrapper">
+        <template id="clotheList" is="dom-repeat" items="[[clothes]]" filter="filterFunction" observe="[[filterProperty]]">
+        <paper-icon-item class="clothe-item" on-click="selectHandler" class="layout horizontal">
+            <div class="layout vertical">
+                <img class$="[[_imageClass(item.clothe_origin)]]" src="[[item.clothe_image]]" width="[[clotheSize]]" height="[[clotheSize]]" />
+                <div class="clothe-label">
+                    <span>[[item.clothe_type]]</span>, <span>[[item.clothe_subtype]]</span>
+                    <template is="dom-if" if="[[displayColors]]">
+                        <colors-list color-string="[[item.clothe_colors]]"></colors-list>
+                    </template>
+                </div>
+            </div>
+            <template is="dom-if" if="[[removable]]">
+                <iron-icon class="remove-button" icon="clear" on-click="removeItem"></iron-icon>
+            </template>
+        </paper-icon-item>
+        </template>
+    </div>
+        
+</template>
+<script>
+(function() {
+
+Polymer({
+    is: 'clothe-list',
+    properties: {
+        clothes: {
+            type:Array, 
+            value: []
+        },
+        clotheSize: {
+            type: Number,
+            value: 150
+        },        
+        selectedClothe: {
+            type:Object,
+            notify: true
+        },
+        filterProperty: {
+            type: String
+        },
+        filterValue: {
+            type: String
+        },
+        displayColors: {
+            type: Boolean,
+            value: false,
+            observer: '_displayColorsChanged'
+        },
+        removable: {
+            type: Boolean,
+            value: false,
+            observer: '_removableChanged'
+        },
+        orientation: {
+            type: String,
+            value: 'horizontal',
+            observer: '_orientationChanged'
+        }
+    },
+    created: function() {
+        console.log("clothe list created.");
+    },                
+    ready: function() {
+        
+    },
+    filterFunction: function(item) {
+        return (item[this.filterProperty] === this.filterValue);
+    },
+    selectHandler: function(event) {                
+        var clothe = this.$.clotheList.itemForElement(event.target); 
+        this.fire('changed', clothe);
+    },  
+    removeItem: function(event) {
+        if(this.removable) {
+            var index = this.$.clotheList.indexForElement(event.target);
+            this.splice('clothes', index, 1);
+        }
+    },   
+    _imageClass: function(origin) {
+        return 'clothe-image ' + origin;
+    },
+    _displayColorsChanged: function(newValue, oldValue) {
+        
+    },
+    _removableChanged: function(newValue, oldValue) { 
+        this.set('removable', newValue);
+    },
+    _orientationChanged: function(newValue, oldValue) {        
+        if(newValue !== oldValue) {
+            if(newValue === 'vertical')
+                this.$.listWrapper.classList.add('vertical');
+            else
+                this.$.listWrapper.classList.remove('vertical');
+        }
+    }
+    
+});
+})();
+</script>
+    
+</dom-module>    

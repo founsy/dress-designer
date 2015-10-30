@@ -1,0 +1,443 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<dom-module id="file-upload">
+  
+    <template>
+        <style include="shared-styles"></style>
+        <style>
+            :host {
+                display: block;
+            }
+            #dropFile { 
+                position: relative;
+                display: block;
+                margin: 20px auto;
+                border: 10px dashed #ccc; 
+                width: 80%; 
+                height: 50px;                 
+            }
+            #dropFile.hoverstate {
+                display: block;
+                margin: 20px auto;
+                border: 10px dashed #333;
+                width: 80%; 
+                height: 50px;
+            }
+            .small {
+                font-size: 0.8em;
+            }
+            .clothe-item {
+                display: inline-block;
+                text-transform: uppercase;
+                text-align: center;
+                padding: 0.5em;
+                vertical-align: top;
+            }
+            .clothe-item .avatar {
+                margin: 0 auto;
+                display: block;
+                width: 124px;
+                height: 124px;
+                overflow: hidden;
+                background: #ccc;
+            }
+            .clothe-item .label {
+                display: block;
+                text-align: center;
+                width: 124px;
+                margin-top: 0.5em;
+                font-size: 0.8em;
+                line-height: 1em;
+            }
+            .upload-section {
+            }
+            paper-button.import {
+                background: green;
+                color: white;
+            }
+            paper-progress {
+              display: block;
+              width: 100%;
+              margin: 20px 0;
+            }
+            paper-progress.blue {
+              --paper-progress-active-color: var(--paper-light-blue-500);
+              --paper-progress-secondary-color: var(--paper-light-blue-100);
+            }            
+            .blue {
+              background-color: var(--paper-light-blue-300);
+            }
+            .red {
+              background-color: var(--paper-red-300);
+            }
+            .input-name {
+                font-size: 1.5em;
+            }
+            .download-link {
+                margin-top: 1.5em;                
+                text-align: center;
+            }
+            .download-link a {
+                display: block;
+                text-align: center;
+                padding: 1em;
+                background-color: rgba(244, 244, 244, 0.5);
+                color: darkgray;
+                border-radius: 4px;
+            }
+            .download-link a:enabled {
+                text-transform: uppercase;
+                background-color: cornflowerblue;
+                color: white;
+                text-decoration: none;
+            }
+            .bold {
+                font-weight: bold;
+            }
+        </style>
+        
+        <paper-toast visible="{{!fileAvailable}}" duration="10000" text="Your browser don't support FileSystem api.">
+             <a href="https://www.google.com/intl/fr_fr/chrome/browser/">Please, download chrome</a>
+        </paper-toast>
+        
+        <paper-toast visible="{{fileError}}" duration="5000" text="This file is not working."></paper-toast>
+        
+        <div class="vertical-section upload-section">
+            <p><iron-icon icon="file-upload"></iron-icon>Upload dressing contents (CSV and JPEGs)</p>
+            <p><input id="inputFile" multiple type="file" accept=".csv,.jpg" on-change="fileChangeHandler" /></p>
+        </div>    
+        
+        <div class="list short" role="list">            
+        <template id="dressing-list" is="dom-repeat" items="{{clothes}}">
+            <paper-icon-item class="clothe-item">
+              <img class="avatar" width="42" src="{{item.imageSrc}}" />
+              <div class="flex label"><span>{{item.clothe_type}}</span>, <span>{{item.clothe_subtype}}</span>, <span>{{item.clothe_colors}}</span></div>
+            </paper-icon-item>
+        </template>
+        </div>    
+        
+        <p class="small">Dressing file: <span class="bold">{{dressing.name}}</span></p>
+        <p class="small">Created on: <span>{{dressing.created}}</span></p>
+        
+        <div class="vertical-section">
+            <paper-progress class="blue" disabled="{{!loading}}" indeterminate></paper-progress>
+        </div>
+        
+        <div class="horizontal layout">
+            <paper-button on-click="cancelDressing">
+                <iron-icon icon="clear"></iron-icon>
+                Cancel
+            </paper-button>
+            <div class="flex"></div>
+            <paper-button class="colorful" raised on-click="convertDressing" disabled="{{downloadReady}}">
+                <iron-icon icon="check"></iron-icon>
+                Import the dressing
+            </paper-button>
+        </div>    
+        
+        <div class="download-link">
+            <a href="{{downloadURL}}" target="_blank">Download the dressing data</a>
+        </div>    
+        
+    </template>
+
+<script src="../../scripts/filesystem.js" type="text/javascript"></script>
+<script>
+(function() {
+  'use strict';
+
+    Polymer({
+        is: 'file-upload',  
+        properties: {            
+            loading: {
+                type: Boolean,
+                notify: true,
+            },
+            dressing: {
+                type: Object,
+                notify: true,
+            },            
+            clothes: {
+                type: Array,
+                notify: true,
+            },
+            imageFiles: {
+                type: Object,
+                notify: false,
+            }, 
+            downloadReady: {
+                type: Boolean,
+                notify: true
+            },
+            downloadURL: {
+                type: String,
+                notify: true
+            }
+        },
+//        listeners: {
+//            'inputFile.dragover': 'dragoverHandler',
+//            'inputFile.dragend': 'dragendHandler',
+//            'inputFile.drop': 'dropHandler',
+//        },
+        created: function() {
+            console.log("file-upload created.");
+        },                
+        ready: function() {            
+            var self = this;
+            
+            app.dataStore.load();
+            
+            this.fs = fileSystem;
+            this.dressing = {};
+            this.loading = false;
+            this.downloadReady = false;
+            
+            this.fs.init(function(_fs){
+                if (!fileSystem.available) {
+                    self.fileAvailable = false;
+                } else {
+                    self.fileAvailable = true;
+                }
+                self.clothes = [];
+            });
+        },
+        
+        fileChangeHandler: function(event) {
+            console.log("fileChangeHandler");
+            this.set('loading', true);
+            this.processFiles(event.target.files);
+        }, 
+        
+        processFiles: function(files) {
+            //console.log(files);
+            
+            var self = this;
+            
+            // 1. find the .csv library            
+            // 2. find the .jpg images
+            var file = null;
+            this.csvFile = null;
+            this.imagesFiles = {};
+            
+            // Loop on all files
+            var filesCount = files.length;            
+            for (var i=0; i<filesCount; i++) {
+                file = files[i];
+                if(file.type === this.fs.TYPE_CSV) {
+                    this.csvFile = file;
+                }
+                else if(file.type === this.fs.TYPE_JPEG) {
+                    this.imagesFiles[file.name] = file;
+                }
+            }            
+            file = null;
+            
+            console.log(this.csvFile);
+            console.log(this.imagesFiles);
+            
+            // 3. read the csv File                          
+            if(!this.csvFile) return;
+            
+            // remove extention
+            var fileName = this.csvFile.name.substr(0, this.csvFile.name.lastIndexOf('.'));
+            
+            this.set('dressing.name', fileName);
+            this.set('dressing.from', fileName);
+            this.set('dressing.created', this.csvFile.lastModifiedDate);
+            
+            fileSystem.readTextFile(this.csvFile).then(function(response) {
+                console.log(response);
+                self.processPreview(response);
+            }, function(error) {
+                self.set('error', error);
+                self.set('loading', false);
+            });
+        },
+        
+        processPreview: function(data) {            
+            window.URL = window.URL || window.webkitURL;            
+            var self = this;            
+            var clothesArray = [];
+            var checked = this.checkAll;
+            var rows = data.split(/\r\n|\n/);
+            
+            // Each rows after header row
+            for (var i=1; i<rows.length; i++) {
+                var columns = rows[i].split(';');
+                var clothe = {
+                    clothe_id: columns[0],
+                    clothe_partnerid: columns[1],
+                    clothe_partnerName: columns[2],
+                    clothe_type: columns[3],
+                    clothe_subtype: columns[4],
+                    clothe_name: columns[5],
+                    clothe_isUnis: columns[6],
+                    clothe_pattern: columns[7],
+                    clothe_cut: columns[8],
+                    clothe_image: columns[9],
+                    clothe_colors: columns[10],
+                    imageSrc: null
+                };                      
+                
+                // 4. attach each image to the good row
+                var imageFile = this.imagesFiles[clothe.clothe_image];
+                clothe.imageSrc = window.URL.createObjectURL(imageFile);
+                clothesArray.push(clothe);
+            }
+            
+            // 5. display via the clothes array binding
+            console.log(clothesArray);
+            this.set('clothes', clothesArray);            
+            this.set('loading', false);
+            
+        },
+        
+        convertDressing: function() {            
+            
+            var self = this;    
+            
+            this.set('loading', true);
+            
+            // Loop on all clothes...
+            var clothesInitialCount = this.clothes.length;
+            var clothesPicturedCount = clothesInitialCount;
+            let clothesConvertedCount = 0;
+            var clothe = null;
+            var reader = null; 
+            var indexesToDelete = [];
+            
+            // Loop on all clothes
+            for (var i=0; i< clothesInitialCount; i++) { 
+                    
+                clothe = this.clothes[i];
+                
+                // Get the clothe File
+                var imageFile = this.imagesFiles[clothe.clothe_image];
+                
+                // Don't use no pictured clothe.                
+                if(imageFile === undefined || imageFile === null) {
+                    
+                    // Remove the clothe node
+                    //delete clothe;
+                    indexesToDelete.push(i);
+                    
+                    // Decrement pictured clothes counter
+                    clothesPicturedCount--;
+                }
+                else {                                                            
+                    convertImage(clothe, imageFile, function(isError) {
+                        // If cannot convert the image in base64
+                        if(isError) {
+                            // Remove the clothe node
+                            indexesToDelete.push(i);
+                    
+                            // Decrement pictured clothes counter
+                            clothesPicturedCount--;
+                        }
+                        else {
+                            // Increment converted clothes
+                            clothesConvertedCount++;
+                            // When all pictured clothes are converted...
+                            if(clothesConvertedCount === clothesPicturedCount) {
+                                
+                                // Clone the array
+                                var clone = self.clothes.slice();                                
+                                
+                                // then remove not pictured items
+                                if(indexesToDelete.length > 0) {
+                                    for(var j=0; j < indexesToDelete.length ; j++) {
+                                        clone.splice(indexesToDelete[j], 1);
+                                    }
+                                }
+                                // Finally, return the exported item
+                                self.completeConvert(clone);                                
+                           }
+                        }
+                    });                                        
+                }
+            }
+            
+            function convertImage(clothe, imageFile, callback) {
+                                  
+                // Read the file
+                reader = new FileReader();                
+                reader.readAsDataURL(imageFile);
+                
+                // Get the base64 data and push in the imageBase64
+                reader.onloadend = function(event) {
+                    console.log("Load end: ", event);
+                    clothe.clothe_image = event.currentTarget.result;
+                    delete clothe.imageSrc;                    
+                    callback.call(this, false);
+                }    
+                
+                // Error
+                reader.onerror = function(event) {
+                    console.log("Load error: ", event);
+                    // delete clothe;
+                    callback.call(this, true);
+                }                
+            }            
+        },        
+        
+        completeConvert: function(exportedClothes) {
+            
+            var self = this;
+            
+            console.log(exportedClothes);
+            
+            // 7. save the json file local path in the localStorage.            
+            // Stringify
+            var clothesString = JSON.stringify(exportedClothes);
+            
+            // Write in a file
+            var filename = this.dressing.name;         
+            
+            fileSystem.writeFile(filename, clothesString, 'application/json').then(function(response) {
+                // Set the URL for download
+                self.set('downloadURL', response);
+                self.set('downloadReady', true);                    
+                // Save the user file
+                var user = { identifier: filename, gender: 0, path: filename, pic: filename + '.jpg' }
+                app.dataStore.addUser(user);                    
+                self.set('loading', false);
+                console.log("Convert completed.");
+            }, function(error) {
+                self.set('error', error);
+                self.set('loading', false);
+            });
+            
+            // fire custum event
+            //this.fire("imported", data);
+        },
+        
+        cancelDressing: function() {
+            console.log("Canceling the new dressing.");
+            this.set('dressing', null);
+            this.set('clothes', null);
+            this.set('loading', false);
+            this.set('downloadURL', '');
+        },
+        
+//        dragoverHandler: function(event) {
+//            console.log("dragoverHandler");
+//            event.target.className = 'hoverstate';
+//            //return false;
+//        },
+//        dragendHandler: function(event) {
+//            console.log(event.target);
+//            event.target.className = ''; 
+//            return false;
+//        },
+//        dropHandler: function(event) {    
+//            console.log("dropHandler");
+//            event.target.className = '';
+//            event.preventDefault();
+//            event.stopPropagation();
+//            this.processFiles(event.dataTransfer.files);
+//        }        
+    });
+    
+})();
+</script>
+
+</dom-module>

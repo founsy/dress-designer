@@ -1,0 +1,205 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+
+<dom-module id="user-list">
+  
+    <template>
+        <style include="shared-styles"></style>
+        <style>
+            :host {
+                display: block;
+            } 
+            .list {
+                width: 80%;
+                margin: 0 auto;
+            }
+            .item {
+                display: inline-block;
+                width: 124px;       
+                text-align: center;        
+                vertical-align: top;
+            }
+            .avatar {
+                text-align: center;
+                margin: 0 auto;
+                height: 64px;
+                width: 64px;
+                border-radius: 30px;
+                box-sizing: border-box;
+                background-color: #DDD;
+            }
+            .item .label {
+                display: block;
+                text-align: center;
+                width: 124px;
+                margin-top: 0.5em;
+                font-size: 0.8em;
+                line-height: 1em;
+            }
+            paper-progress {
+              display: block;
+              width: 100%;
+              margin: 20px 0;
+            }
+            paper-progress.blue {
+              --paper-progress-active-color: var(--paper-light-blue-500);
+              --paper-progress-secondary-color: var(--paper-light-blue-100);
+            }
+            .disabled {
+                display: none;
+            }
+        </style>
+        
+        <paper-toast visible="{{error}}" duration="5000" text="{{error.text}}"></paper-toast>
+        
+        <div class="layout vertical">
+            <div role="list">
+                <template id="userList" is="dom-repeat" items="[[users]]">
+                    <paper-icon-item class="item">
+                      <div><img class="avatar" src="{{_userPic(item.pic)}}"></div>
+                      <div class="flex label"><span>[[item.identifier]]</span></div>
+                      <paper-button on-click="selectUser" raised>open</paper-button>
+                    </paper-icon-item>
+                </template>
+            </div> 
+            <div class="layout vertical upload-section">
+                <p><iron-icon icon="file-download"></iron-icon><label for="inputFile">Open a dressing file (JSON)</label></p>
+                <input id="inputFile" type="file" accept=".json" on-change="fileChangeHandler" />                    
+                <paper-progress class="blue" disabled="{{!loading}}" indeterminate></paper-progress>                
+            </div>            
+        </div>    
+        
+    </template>
+    
+</dom-module>
+        
+<script src="../../scripts/filesystem.js" type="text/javascript"></script>
+<script>
+(function() {
+  'use strict';
+
+    Polymer({
+        is: 'user-list',  
+        
+        properties: {            
+            users: {
+                type: Array,
+                notify: true,
+            },
+            currentUser: {
+                type: Object,
+                notify: true,
+            },
+            error: {
+                type: Object,
+                notify: true,
+            },
+            loading: {
+                type: Boolean,
+                notify: true,
+            },
+            clothes: {
+                type: Array,
+                notify: false,
+            }
+        },
+        
+        _userPic: function(pic) {
+            return 'images/'+pic;
+        },
+        
+        created: function() {
+            console.log("dressing-loader created.");
+        },                
+        
+        ready: function() {            
+            
+            var model = app.dataStore.load();
+            
+            var self = this;
+            this.loading = false;
+            
+            fileSystem.init(function(_fs){
+                if (!fileSystem.available) {
+                    self.fileAvailable = false;                    
+                } else {
+                    self.fileAvailable = true;
+                    self.set('users', model.users);
+                }
+                self.clothes = [];
+            });
+        },      
+        
+        selectUser: function(event) {
+            var user = this.$.userList.itemForElement(event.target);
+            console.log(user);
+            this.set('currentUser', user);
+            this.openDressingFile(user.path);
+        },
+        
+        // Open the JSON file
+        openDressingFile: function(path) {
+            var self = this;
+            this.set('loading', true);
+            fileSystem.getFileByName(path).then(function(response) {
+                console.log("Response: ", response);
+                self.readDressingFile(response);
+            }, function(error) {
+                console.error("Error: ", error);
+                self.set('error', error);
+                self.set('loading', false);
+            });
+        },
+        
+        // Read the JSON file
+        readDressingFile: function(file) { 
+            var self = this;
+            
+            // remove the extension
+            app.currentFileName = file.name.substr(0, file.name.lastIndexOf('.'));
+            
+            fileSystem.readTextFile(file).then(function(response) {
+                self.processData(response);
+            }, function(error) {
+                self.set('error', error);
+                self.set('loading', false);
+            });
+        },
+        
+        processData: function(result) {
+            
+            var base64Prefix = 'data:image/jpeg;base64,';
+            
+            this.clothes = JSON.parse(result);
+            console.log('je passe par ici.');
+            for(var i=0;i<this.clothes.length;i++) {
+                var base64 = this.clothes[i].clothe_image;                
+                // Means: come from Dresstime app & system export (not from designer)
+                if(base64.indexOf(base64Prefix) === -1) {
+                    this.clothes[i].clothe_origin = 'system';
+                    this.clothes[i].clothe_image = base64Prefix + base64;
+                }
+                else {
+                    this.clothes[i].origin = 'designer';
+                }
+            }
+            this.set('loading', false);
+            this.fire("imported", this.clothes);
+        },
+        
+        fileChangeHandler: function(event) {
+            console.log("file change.");
+            var self = this;            
+            this.set('loading', true);
+            console.log(event.target.files);
+            var file = event.target.files[0];
+            if(!file) return;
+            this.readDressingFile(file);
+        }
+        
+        
+    });
+    
+})();
+</script>
+
+</dom-module>        

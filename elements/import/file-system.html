@@ -1,0 +1,124 @@
+<!-- 
+ * Html5 LocalFileSystem polymer webcomponent  
+ *
+ * AOUT 2010 - MAI 2014 | Stephane Labbe
+ * Released under the MIT license
+ * https://github.com/asicfr/polymerFileSystem/blob/master/LICENSE.txt
+ -->
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<dom-module name="file-system">
+	<template>
+	    <style>
+	      /* styles for the custom element itself - lowest specificity */
+	      :host { display: block; }
+	    </style>
+        
+		<template is="dom-if" if="{{!fileAvailable}}">
+			<div class="alert alert-danger">
+				Your browser don't support FileSystem api. <a href="https://www.google.com/intl/fr_fr/chrome/browser/">Please, download chrome</a><br/>
+			</div>
+		</template>
+        
+		<template is="dom-if" if="{{fileError}}">
+			<div class="alert alert-danger">
+				Error : {{fileError}}<br/>
+			</div>
+		</template>
+
+		<template is="dom-if" if="{{fileAvailable}}">
+            
+            <iron-icon icon="file-upload"></iron-icon>
+            <label for="inputFile">Upload a new file</label>
+            <input id="inputFile" type="file" accept=".csv, .json" on-change="addFile" />
+            <template is="dom-if" if="{{loading}}">
+                <paper-progress id="inputFileProgress" class="blue" indeterminate></paper-progress>
+            </template>
+            
+<!--
+            <paper-button raised on-click="refreshList">
+                <iron-icon icon="refresh"></iron-icon>
+                Refresh
+            </paper-button>
+-->
+<!--
+			<template id="containerlist" is="dom-if" if="{{files}}">
+				<h4 class="titrelist">List of existing files :</h4>
+				<template id="filelist" is="dom-repeat" items="{{files}}">
+					<button on-click="removeSomeFile" class="btn btn-danger btn-xs">
+						<span class="glyphicon glyphicon-remove"></span> Remove
+					</button>
+					<button on-click="openSomeFile" class="btn btn-default btn-xs" type="button">
+						<span class="glyphicon glyphicon-eye-open"></span>
+                        <span>{{item.name}}</span>
+	      				<span class="label label-warning">{{item.fileSize}} bytes</span>
+	      				<span class="label label-info">modified on <span>{{item.fileModificationTime}}</span></span>
+	    			</button>
+	    			<br/>
+				</template>
+			</template>
+-->
+		</template>
+	</template>
+
+	<script src="../../scripts/filesystem.js"></script>      
+	<script>
+		(function() {
+            'use strict';
+            
+			Polymer({
+                is: 'file-system', 
+                created: function() {
+					console.log("created");
+                    // bind function 'callBackRefreshList' and 'callBackFsmChangeState' with 'this' current context
+					this.fsm = new fileSystemManager(this.callbackChangeState.bind(this));
+					//this.fsm.setCallBackAfterLoad(this.callBackRefreshList.bind(this));
+					//console.log("end created");
+				},                
+				ready: function() {
+					console.log("ready");
+                    this.fileAvailable = this.fsm.isInit();
+					this.files = [];
+				},
+                addFile: function(event) {
+					console.log("addFile.");
+                    //console.log(event.target.files);
+                    this.loading = true;
+                    this.fsm.add(event.target.files, this.fileLoadedHandler);
+		      	},
+                fileLoadedHandler: function() {
+                    this.loading = false;
+                },
+				callbackChangeState: function() {
+					console.log("fsm state");
+					this.fileAvailable = this.fsm.isInit();
+                    console.log("file system is ok: " + this.fileAvailable);
+					this.fileError = this.fsm.getError();
+					if (this.fileAvailable) {
+						//this.fsm.loadFiles();
+					}
+				},
+//				refreshList: function(event, detail, sender) {
+//					console.log("refreshList");
+//					this.fsm.loadFiles();
+//				},
+//				callBackRefreshList: function(newList) {
+//					console.log("newList size : " + newList.length);
+//					this.myfiles = newList;
+//				},
+//				openSomeFile: function(event, detail, sender) {
+//					console.log("openSomeFile");
+//					window.open(sender.templateInstance.model.onefile.fileURL)
+//				},
+//				removeSomeFile: function(event, detail, sender) {
+//					console.log("removeSomeFile");
+//					// access the current named model instance that in a template repeat
+//					var fileName = sender.templateInstance.model.onefile.name;
+//					this.fsm.removeFile(fileName);
+//				}
+		    });  
+
+	  	})();
+			
+	</script>
+    
+</dom-module>

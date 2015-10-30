@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="description" content="">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DressDesigner</title>
+  <!-- Place favicon.ico in the `app/` directory -->
+
+  <!-- Chrome for Android theme color -->
+  <meta name="theme-color" content="#2E3AA1">
+
+  <!-- Web Application Manifest -->
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Tile color for Win8 -->
+  <meta name="msapplication-TileColor" content="#3372DF">
+
+  <!-- Add to homescreen for Chrome on Android -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="application-name" content="PSK">
+  <link rel="icon" sizes="192x192" href="images/touch/chrome-touch-icon-192x192.png">
+
+  <!-- Add to homescreen for Safari on iOS -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Polymer Starter Kit">
+  <link rel="apple-touch-icon" href="images/touch/apple-touch-icon.png">
+
+  <!-- Tile icon for Win8 (144x144) -->
+  <meta name="msapplication-TileImage" content="images/touch/ms-touch-icon-144x144-precomposed.png">
+
+  <!-- build:css styles/main.css -->
+  <link rel="stylesheet" href="styles/main.css">
+  <!-- endbuild-->
+
+  <!-- build:js bower_components/webcomponentsjs/webcomponents-lite.min.js -->
+  <script src="bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+  <!-- endbuild -->
+  
+  <!-- will be replaced with elements/elements.vulcanized.html -->
+  <link rel="import" href="elements/elements.html">
+  <!-- endreplace-->
+
+  <style is="custom-style" include="shared-styles"></style>
+
+</head>
+
+<body unresolved class="fullbleed layout vertical">
+    
+<!--    <span id="browser-sync-binding"></span>-->
+    
+    <template is="dom-bind" id="app">
+        
+        <paper-header-panel mode="waterfall">            
+            <paper-toolbar class="paper-header">
+                <paper-tabs class="bottom self-end" attr-for-selected="data-route" selected="{{route}}">
+                    <paper-tab data-route="design">
+                       <a href="/design" on-click="onDataRouteClick">design</a>
+                    </paper-tab>
+                    <paper-tab data-route="users">
+                        <a href="/users" on-click="onDataRouteClick">users</a>
+                    </paper-tab>
+                    <paper-tab data-route="import">
+                        <a href="/import" on-click="onDataRouteClick">import</a>
+                    </paper-tab>                    
+<!--
+                    <paper-tab data-route="export">
+                       <ahref="/export" on-click="onDataRouteClick">export</a>
+                    </paper-tab>      
+-->
+                </paper-tabs>
+                <div class="bottom flex"></div>
+                <div class="middle end horizontal layout"></div>
+            </paper-toolbar>
+            
+            <div class="content fit">
+                
+                <iron-pages attr-for-selected="data-route" selected="{{route}}">
+                    
+                    <section data-route="design" class="layout horizontal">                        
+                        <dressing-view id="dressingView" on-select="onSelectClothe" style="width: 40%;"></dressing-view>
+                        <outfit-designer id="outfitDesigner" on-outfitsaved="onOutfitSaved" style="width: 30%;"></outfit-designer>
+                        <outfit-list id="outfitList" style="width: 30%"></outfit-list>
+                    </section>  
+                    
+                    <section data-route="users">
+                        <user-list on-imported="onImportDressing"></user-list>                        
+                        
+                         <sc-swiper style="width:300px;height:300px;">
+                            <img src="http://lorempixel.com/640/480/cats" />
+                            <img src="http://lorempixel.com/640/480/sports" />
+                            <img src="http://lorempixel.com/640/480/animals" />
+                         </sc-swiper>
+                        
+                    </section>
+                    
+                    <section data-route="import">
+                         <file-upload id="fileUpload" on-imported="onImportDressing"></file-upload>
+                    </section>
+                    
+<!--
+                    <section data-route="export">
+                      <paper-material elevation="1">
+                        <h2 class="page-title">Export</h2>
+                        <p>This is the export section</p>
+                      </paper-material>
+                    </section>
+-->
+                    
+                </iron-pages>            
+            </div>   
+        </paper-header-panel>
+    
+    </template>
+    
+</body>    
+  
+<!-- build:js scripts/app.js -->
+<script src="scripts/app.js"></script>
+<!-- endbuild-->
+    
+</body>
+
+</html>
